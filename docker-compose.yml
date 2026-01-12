@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    container_name: autoecole-db
+    environment:
+      POSTGRES_DB: autoecole
+      POSTGRES_USER: autoecole
+      POSTGRES_PASSWORD: autoecole
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../docker/backend.Dockerfile
+    container_name: autoecole-backend
+    command: npm run start:dev
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: ../../docker/frontend.Dockerfile
+    container_name: autoecole-frontend
+    command: npm run dev
+    volumes:
+      - ./apps/frontend:/app
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
