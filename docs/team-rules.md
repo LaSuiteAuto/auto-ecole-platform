@@ -28,6 +28,7 @@ Même si nous sommes tous développeurs, les rôles existent.
 - Qualité avant vitesse.
 - Toute décision importante doit être écrite.
 - Une feature peut être supprimée ou refaite : pas d’ego.
+- Prisma est toujours exécuté dans le container backend. Aucune commande Prisma n’est lancée en local.
 
 ## 4. Organisation du travail
 - Sprints de 2 semaines.
