@@ -148,6 +148,7 @@ export class AuthController {
   async getMe(@CurrentUser() user: CurrentUserData) {
     // L'utilisateur est déjà validé par le JwtAuthGuard
     // On récupère les données complètes depuis la DB
+
     return this.authService.getMe(user.userId);
   }
 

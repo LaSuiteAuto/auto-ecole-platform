@@ -68,6 +68,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     // Vérification supplémentaire : l'utilisateur existe-t-il toujours ?
     // Protège contre les tokens valides d'utilisateurs supprimés
+
     const user = await this.authService.validateUser(payload.sub);
 
     if (!user) {
@@ -78,8 +79,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // On enrichit avec les données fraîches de la DB
     return {
       userId: user.id,
+
       email: user.email,
+
       tenantId: user.tenantId,
+
       role: user.role,
     };
   }

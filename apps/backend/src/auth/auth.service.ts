@@ -55,6 +55,7 @@ export class AuthService {
     const { tenantName, email, password } = registerDto;
 
     // Vérification : l'email doit être unique dans toute la base
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -69,6 +70,7 @@ export class AuthService {
 
     // Transaction : création tenant + user en une seule opération atomique
     // Si une étape échoue, tout est annulé
+
     const tenant = await this.prisma.tenant.create({
       data: {
         name: tenantName,
@@ -88,14 +90,18 @@ export class AuthService {
     const user = tenant.users[0];
 
     // Génération du JWT
+
     const token = this.generateToken(user.id, user.tenantId, user.role);
 
     return {
       access_token: token,
       user: {
         id: user.id,
+
         email: user.email,
+
         role: user.role,
+
         tenantId: user.tenantId,
       },
     };
@@ -117,6 +123,7 @@ export class AuthService {
     const { email, password } = loginDto;
 
     // Recherche de l'utilisateur par email
+
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -128,6 +135,7 @@ export class AuthService {
 
     // Vérification du mot de passe avec bcrypt
     // bcrypt.compare gère automatiquement le salt
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -135,14 +143,18 @@ export class AuthService {
     }
 
     // Génération du JWT
+
     const token = this.generateToken(user.id, user.tenantId, user.role);
 
     return {
       access_token: token,
       user: {
         id: user.id,
+
         email: user.email,
+
         role: user.role,
+
         tenantId: user.tenantId,
       },
     };
@@ -186,6 +198,7 @@ export class AuthService {
    * @param userId - ID de l'utilisateur
    * @returns Utilisateur si valide, null sinon
    */
+
   async validateUser(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
