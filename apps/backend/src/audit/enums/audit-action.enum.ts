@@ -1,0 +1,36 @@
+/**
+ * Actions critiques pour l'audit log
+ *
+ * Convention de nommage : ENTITY_ACTION
+ * - ENTITY : Type d'entité (LESSON, STUDENT, INSTRUCTOR, etc.)
+ * - ACTION : Action effectuée (CREATED, UPDATED, DELETED, etc.)
+ *
+ * Utilisé dans AuditService pour standardiser les actions loggées
+ */
+export enum AuditAction {
+  // Séances (Lessons)
+  LESSON_CREATED = 'LESSON_CREATED',
+  LESSON_UPDATED = 'LESSON_UPDATED',
+  LESSON_CANCELLED = 'LESSON_CANCELLED',
+  LESSON_DELETED = 'LESSON_DELETED',
+
+  // Élèves (Students)
+  STUDENT_CREATED = 'STUDENT_CREATED',
+  STUDENT_UPDATED = 'STUDENT_UPDATED',
+  STUDENT_ARCHIVED = 'STUDENT_ARCHIVED',
+  STUDENT_DELETED = 'STUDENT_DELETED',
+  STUDENT_HOURS_UPDATED = 'STUDENT_HOURS_UPDATED',
+
+  // Moniteurs (Instructors)
+  INSTRUCTOR_CREATED = 'INSTRUCTOR_CREATED',
+  INSTRUCTOR_UPDATED = 'INSTRUCTOR_UPDATED',
+  INSTRUCTOR_DELETED = 'INSTRUCTOR_DELETED',
+
+  // Rôles et permissions
+  USER_ROLE_CHANGED = 'USER_ROLE_CHANGED',
+  USER_CREATED = 'USER_CREATED',
+  USER_DELETED = 'USER_DELETED',
+
+  // Export de données
+  DATA_EXPORTED = 'DATA_EXPORTED',
+}

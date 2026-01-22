@@ -12,6 +12,7 @@ model Tenant {
   createdAt DateTime @default(now())
 
   users     User[]
+  auditLogs AuditLog[]
 }
 
 model User {
@@ -21,9 +22,29 @@ model User {
   role      UserRole
   tenantId  String
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  auditLogs AuditLog[]
 
   createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  actorUserId  String
+  action       String   // Ex: "LESSON_CANCELLED", "STUDENT_ARCHIVED"
+  entityType   String   // Ex: "Student", "Lesson", "Instructor"
+  entityId     String   // ID de l'entité concernée
+  metadata     Json?    // Données avant/après, détails supplémentaires
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  actor        User     @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 enum UserRole {
