@@ -12,6 +12,7 @@ model Tenant {
   createdAt DateTime @default(now())
 
   users     User[]
+  students  Student[]
   auditLogs AuditLog[]
 }
 
@@ -23,6 +24,7 @@ model User {
   tenantId  String
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  student   Student?   // Un User peut être un Student (1-to-1 optionnel)
   auditLogs AuditLog[]
 
   createdAt DateTime @default(now())
@@ -52,4 +54,87 @@ enum UserRole {
   SECRETARY
   INSTRUCTOR
   STUDENT
+}
+
+enum LicenseType {
+  B       // Permis B Classique
+  AAC     // Apprentissage Anticipé de la Conduite (dès 15 ans)
+  CS      // Conduite Supervisée (dès 18 ans)
+  A1      // Moto 125cc
+  A2      // Moto 
+}
+
+// 2. Enum pour le statut administratif
+enum StudentStatus {
+  PROSPECT
+  ANTS_PROCESSING
+  ACTIVE
+  EXAM_READY
+  LICENSE_OBTAINED
+  ARCHIVED
+}
+
+model Student {
+  id        String   @id @default(uuid())
+  
+  // Liens techniques
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  // --- A. IDENTITÉ (État Civil Strict) ---
+  birthName    String   // Nom de naissance (Jeune fille)
+  firstName    String
+  birthDate    DateTime
+  birthCity    String
+  birthZipCode String?  // Optionnel si né à l'étranger
+  birthCountry String   @default("FRANCE")
+
+  // --- B. CONTACT & ADRESSE ---
+  address      String
+  city         String
+  zipCode      String
+  phone        String   // Portable élève
+
+  // --- C. DOCUMENTS & CONFORMITÉ ANTS ---
+  neph         String?  @unique 
+  ePhotoCode   String?
+  
+  // Est-ce que l'élève a fourni ces documents ? (Checkboxes admin)
+  hasIdCard           Boolean @default(false)
+  hasProofOfAddress   Boolean @default(false) // < 6 mois
+  
+  // Spécifique Jeunes
+  hasAssr2            Boolean @default(false) // Attestation Scolaire Sécurité Routière
+  hasJdcCertificate   Boolean @default(false) // 17-25 ans
+  hasCensusCertificate Boolean @default(false) // 16-17 ans
+
+  // Spécifique Médical / Retour de permis
+  needsMedicalOpinion Boolean @default(false) // Si coché, bloque l'inscription ANTS tant que pas reçu
+  hasMedicalOpinion   Boolean @default(false)
+
+  // --- D. FORMATION ---
+  licenseType     LicenseType @default(B)
+  status          StudentStatus @default(PROSPECT)
+  
+  // Compteurs Heures (Minutes préférables pour précision)
+  minutesPurchased  Int @default(0)
+  minutesUsed       Int @default(0)
+
+  // --- E. REPRÉSENTANT LÉGAL (Si Mineur) ---
+  // On stocke ça "à plat" pour l'instant car un parent n'est pas forcément un User
+  guardianName    String?
+  guardianPhone   String?
+  guardianEmail   String?
+  guardianRelation String? // "Père", "Mère", "Tuteur"
+
+  // --- F. SYSTEM ---
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  archivedAt    DateTime? 
+
+  @@index([tenantId])
+  @@index([neph])
+  @@index([birthName])
 }

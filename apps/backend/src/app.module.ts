@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { RequestLoggingInterceptor } from './shared/interceptors';
+import { StudentsModule } from './student/student.module';
 
 /**
  * Module principal de l'application
@@ -27,6 +28,7 @@ import { RequestLoggingInterceptor } from './shared/interceptors';
     PrismaModule, // Base de données
     AuthModule, // Authentification
     AuditModule, // Audit logging
+    StudentsModule, // Gestion des élèves
   ],
   providers: [
     {
