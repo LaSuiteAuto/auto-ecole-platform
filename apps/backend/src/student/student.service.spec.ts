@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StudentsService } from './student.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import {
   ConflictException,
   NotFoundException,
@@ -29,9 +30,14 @@ describe('StudentsService', () => {
     },
   };
 
+  const mockAuditService = {
+    log: jest.fn().mockResolvedValue(undefined),
+  };
+
   const mockTenantId = 'tenant-123';
   const mockUserId = 'user-456';
   const mockStudentId = 'student-789';
+  const mockActorUserId = 'actor-999';
 
   const mockCreateStudentDto = {
     email: 'eleve@test.fr',
@@ -81,6 +87,10 @@ describe('StudentsService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: AuditService,
+          useValue: mockAuditService,
         },
       ],
     }).compile();
@@ -309,10 +319,21 @@ describe('StudentsService', () => {
         status: StudentStatus.ARCHIVED,
       });
 
-      const result = await service.archive(mockStudentId, mockTenantId);
+      const result = await service.archive(
+        mockStudentId,
+        mockTenantId,
+        mockActorUserId,
+      );
 
       expect(result.archivedAt).toBeDefined();
       expect(result.status).toBe(StudentStatus.ARCHIVED);
+      expect(mockAuditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'STUDENT_ARCHIVED',
+          entityType: 'Student',
+          entityId: mockStudentId,
+        }),
+      );
     });
   });
 
@@ -331,17 +352,22 @@ describe('StudentsService', () => {
         status: StudentStatus.ACTIVE,
       });
 
-      const result = await service.restore(mockStudentId, mockTenantId);
+      const result = await service.restore(
+        mockStudentId,
+        mockTenantId,
+        mockActorUserId,
+      );
 
       expect(result.archivedAt).toBeNull();
       expect(result.status).toBe(StudentStatus.ACTIVE);
+      expect(mockAuditService.log).toHaveBeenCalled();
     });
 
     it('devrait rejeter si élève non archivé', async () => {
       mockPrismaService.student.findUnique.mockResolvedValue(mockStudent); // archivedAt: null
 
       await expect(
-        service.restore(mockStudentId, mockTenantId),
+        service.restore(mockStudentId, mockTenantId, mockActorUserId),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -390,9 +416,17 @@ describe('StudentsService', () => {
         mockStudentId,
         600,
         mockTenantId,
+        mockActorUserId,
       );
 
       expect(result.minutesPurchased).toBe(1800);
+      expect(mockAuditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'STUDENT_HOURS_UPDATED',
+          entityType: 'Student',
+          metadata: expect.objectContaining({ type: 'PURCHASE' }),
+        }),
+      );
     });
   });
 
@@ -408,9 +442,17 @@ describe('StudentsService', () => {
         mockStudentId,
         60,
         mockTenantId,
+        mockActorUserId,
       );
 
       expect(result.minutesUsed).toBe(360);
+      expect(mockAuditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'STUDENT_HOURS_UPDATED',
+          entityType: 'Student',
+          metadata: expect.objectContaining({ type: 'CONSUMPTION' }),
+        }),
+      );
     });
 
     it('devrait rejeter si heures insuffisantes', async () => {
@@ -418,7 +460,12 @@ describe('StudentsService', () => {
 
       // Essayer de consommer plus que disponible (900 restantes)
       await expect(
-        service.addUsedMinutes(mockStudentId, 1000, mockTenantId),
+        service.addUsedMinutes(
+          mockStudentId,
+          1000,
+          mockTenantId,
+          mockActorUserId,
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });

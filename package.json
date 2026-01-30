@@ -5,14 +5,15 @@
     "lint:backend": "cd apps/backend && npm run lint",
     "test:backend": "cd apps/backend && npm run test",
     "lint:frontend": "cd apps/frontend && npm run lint",
+    "test:frontend": "cd apps/frontend && npm run test",
 
-    "check": "npm run lint:backend && npm run test:backend && npm run lint:frontend",
+    "check": "npm run lint:backend && npm run test:backend && npm run lint:frontend && npm run test:frontend",
     "push": "npm run check",
 
     "db:migrate": "docker exec -it autoecole-backend npx prisma migrate dev",
     "db:generate" : "docker exec -it autoecole-backend npx prisma generate",
     "db:seed": "docker exec -it autoecole-backend npx prisma db seed",
-    "db:studio": "docker exec -it autoecole-backend npx prisma studio --port 5555"
+    "db:studio": "docker exec -it autoecole-backend npx prisma studio --port 5555 --browser none"
   },
   "devDependencies": {
     "prettier": "^3.7.4"

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StudentsService } from './student.service';
 import { StudentsController } from './student.controller';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Module de gestion des élèves
@@ -12,6 +13,7 @@ import { StudentsController } from './student.controller';
  * Accès : ADMIN et SECRETARY uniquement
  */
 @Module({
+  imports: [AuditModule],
   controllers: [StudentsController],
   providers: [StudentsService],
   exports: [StudentsService], // Pour utiliser dans d'autres modules si besoin

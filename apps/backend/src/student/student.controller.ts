@@ -103,7 +103,7 @@ export class StudentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.studentsService.archive(id, req.user.tenantId);
+    return this.studentsService.archive(id, req.user.tenantId, req.user.sub);
   }
 
   /**
@@ -116,7 +116,7 @@ export class StudentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.studentsService.restore(id, req.user.tenantId);
+    return this.studentsService.restore(id, req.user.tenantId, req.user.sub);
   }
 
   /**
@@ -176,6 +176,7 @@ export class StudentsController {
       id,
       minutes,
       req.user.tenantId,
+      req.user.sub,
     );
   }
 
@@ -190,6 +191,11 @@ export class StudentsController {
     @Body('minutes') minutes: number,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.studentsService.addUsedMinutes(id, minutes, req.user.tenantId);
+    return this.studentsService.addUsedMinutes(
+      id,
+      minutes,
+      req.user.tenantId,
+      req.user.sub,
+    );
   }
 }
