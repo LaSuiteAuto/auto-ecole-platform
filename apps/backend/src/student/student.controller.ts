@@ -24,7 +24,7 @@ import { Request } from 'express';
 // Type pour la requête authentifiée
 interface AuthenticatedRequest extends Request {
   user: {
-    sub: string;
+    userId: string;
     email: string;
     role: Role;
     tenantId: string;
@@ -103,7 +103,7 @@ export class StudentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.studentsService.archive(id, req.user.tenantId, req.user.sub);
+    return this.studentsService.archive(id, req.user.tenantId, req.user.userId);
   }
 
   /**
@@ -116,7 +116,7 @@ export class StudentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.studentsService.restore(id, req.user.tenantId, req.user.sub);
+    return this.studentsService.restore(id, req.user.tenantId, req.user.userId);
   }
 
   /**
@@ -176,7 +176,7 @@ export class StudentsController {
       id,
       minutes,
       req.user.tenantId,
-      req.user.sub,
+      req.user.userId,
     );
   }
 
@@ -195,7 +195,7 @@ export class StudentsController {
       id,
       minutes,
       req.user.tenantId,
-      req.user.sub,
+      req.user.userId,
     );
   }
 }
