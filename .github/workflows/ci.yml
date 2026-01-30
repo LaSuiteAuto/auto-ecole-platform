@@ -28,8 +28,6 @@ jobs:
 
       - name: Generate Prisma Client
         run: |
-          npm uninstall @prisma/client
-          npm install @prisma/client@^7.2.0
           npx prisma generate
 
       - name: Lint
