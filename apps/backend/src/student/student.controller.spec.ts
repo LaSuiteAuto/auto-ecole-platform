@@ -202,6 +202,7 @@ describe('StudentsController', () => {
       expect(mockStudentsService.archive).toHaveBeenCalledWith(
         mockStudentId,
         mockTenantId,
+        mockRequest.user.sub,
       );
     });
   });
@@ -225,6 +226,7 @@ describe('StudentsController', () => {
       expect(mockStudentsService.restore).toHaveBeenCalledWith(
         mockStudentId,
         mockTenantId,
+        mockRequest.user.sub,
       );
     });
   });
@@ -281,6 +283,7 @@ describe('StudentsController', () => {
         mockStudentId,
         600,
         mockTenantId,
+        mockRequest.user.sub,
       );
     });
   });
@@ -301,6 +304,7 @@ describe('StudentsController', () => {
         mockStudentId,
         60,
         mockTenantId,
+        mockRequest.user.sub,
       );
     });
   });

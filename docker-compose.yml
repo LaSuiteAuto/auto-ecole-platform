@@ -16,12 +16,13 @@ services:
       context: ./apps/backend
       dockerfile: ../../docker/backend.Dockerfile
     container_name: autoecole-backend
-    command: npm run start:dev
+    #command: npm run start:dev
     env_file:
       - ./apps/backend/.env
     volumes:
       - ./apps/backend:/app
       - /app/node_modules
+      - /app/dist
     ports:
       - "3000:3000"
       - "5555:5555"

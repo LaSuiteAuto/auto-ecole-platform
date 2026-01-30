@@ -5,13 +5,18 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction } from '../audit/enums/audit-action.enum';
 import { CreateStudentDto, UpdateStudentDto } from './dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole, StudentStatus } from '@prisma/client';
+import { UserRole, StudentStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class StudentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async create(createStudentDto: CreateStudentDto, tenantId: string) {
     // 1. Hash du mot de passe fourni dans le DTO
@@ -198,10 +203,18 @@ export class StudentsService {
       });
     }
 
+    // Cast pour avoir accès à tous les champs
+    const dto = updateStudentDto as UpdateStudentDto & {
+      email?: string;
+      password?: string;
+      birthDate?: string;
+      neph?: string;
+    };
+
     // Si mise à jour du NEPH
-    if (updateStudentDto.neph) {
+    if (dto.neph) {
       const existingNeph = await this.prisma.student.findUnique({
-        where: { neph: updateStudentDto.neph },
+        where: { neph: dto.neph },
       });
 
       if (existingNeph && existingNeph.id !== id) {
@@ -213,19 +226,30 @@ export class StudentsService {
     const {
       email: _email,
       password: _password,
-      ...studentData
-    } = updateStudentDto;
+      archivedAt,
+      birthDate,
+      neph,
+      ...otherData
+    } = dto;
+
+    // Construire les données de mise à jour avec typage correct
+    const studentData: Prisma.StudentUpdateInput = {
+      ...otherData,
+    };
+
+    // Ajouter neph si présent
+    if (neph !== undefined) {
+      studentData.neph = neph;
+    }
 
     // Conversion de la date si présente
-    if (studentData.birthDate) {
-      (studentData.birthDate as any) = new Date(studentData.birthDate);
+    if (birthDate) {
+      studentData.birthDate = new Date(birthDate);
     }
 
     // Conversion de archivedAt si présente
-    if (studentData.archivedAt !== undefined) {
-      (studentData.archivedAt as any) = studentData.archivedAt
-        ? new Date(studentData.archivedAt)
-        : null;
+    if (archivedAt !== undefined) {
+      studentData.archivedAt = archivedAt ? new Date(archivedAt) : null;
     }
 
     return this.prisma.student.update({
@@ -246,35 +270,67 @@ export class StudentsService {
   /**
    * Archive un élève (soft delete)
    */
-  async archive(id: string, tenantId: string) {
-    await this.findOne(id, tenantId);
+  async archive(id: string, tenantId: string, actorUserId: string) {
+    const student = await this.findOne(id, tenantId);
 
-    return this.prisma.student.update({
+    const archivedStudent = await this.prisma.student.update({
       where: { id },
       data: {
         archivedAt: new Date(),
         status: StudentStatus.ARCHIVED,
       },
     });
+
+    // Audit log pour traçabilité
+    await this.auditService.log({
+      tenantId,
+      actorUserId,
+      action: AuditAction.STUDENT_ARCHIVED,
+      entityType: 'Student',
+      entityId: id,
+      metadata: {
+        studentName: `${student.firstName} ${student.birthName}`,
+        previousStatus: student.status,
+      },
+    });
+
+    return archivedStudent;
   }
 
   /**
    * Restaure un élève archivé
    */
-  async restore(id: string, tenantId: string) {
+  async restore(id: string, tenantId: string, actorUserId: string) {
     const student = await this.findOne(id, tenantId);
 
     if (!student.archivedAt) {
       throw new ConflictException("Cet élève n'est pas archivé");
     }
 
-    return this.prisma.student.update({
+    const restoredStudent = await this.prisma.student.update({
       where: { id },
       data: {
         archivedAt: null,
         status: StudentStatus.ACTIVE,
       },
     });
+
+    // Audit log pour traçabilité
+    await this.auditService.log({
+      tenantId,
+      actorUserId,
+      action: AuditAction.STUDENT_UPDATED,
+      entityType: 'Student',
+      entityId: id,
+      metadata: {
+        studentName: `${student.firstName} ${student.birthName}`,
+        action: 'RESTORED',
+        previousStatus: StudentStatus.ARCHIVED,
+        newStatus: StudentStatus.ACTIVE,
+      },
+    });
+
+    return restoredStudent;
   }
 
   /**
@@ -308,10 +364,15 @@ export class StudentsService {
   /**
    * Ajoute des heures achetées
    */
-  async addPurchasedMinutes(id: string, minutes: number, tenantId: string) {
-    await this.findOne(id, tenantId);
+  async addPurchasedMinutes(
+    id: string,
+    minutes: number,
+    tenantId: string,
+    actorUserId: string,
+  ) {
+    const student = await this.findOne(id, tenantId);
 
-    return this.prisma.student.update({
+    const updatedStudent = await this.prisma.student.update({
       where: { id },
       data: {
         minutesPurchased: {
@@ -319,12 +380,35 @@ export class StudentsService {
         },
       },
     });
+
+    // Audit log CRITIQUE pour éviter la fraude
+    await this.auditService.log({
+      tenantId,
+      actorUserId,
+      action: AuditAction.STUDENT_HOURS_UPDATED,
+      entityType: 'Student',
+      entityId: id,
+      metadata: {
+        studentName: `${student.firstName} ${student.birthName}`,
+        type: 'PURCHASE',
+        minutesAdded: minutes,
+        previousMinutesPurchased: student.minutesPurchased,
+        newMinutesPurchased: student.minutesPurchased + minutes,
+      },
+    });
+
+    return updatedStudent;
   }
 
   /**
    * Enregistre des heures consommées
    */
-  async addUsedMinutes(id: string, minutes: number, tenantId: string) {
+  async addUsedMinutes(
+    id: string,
+    minutes: number,
+    tenantId: string,
+    actorUserId: string,
+  ) {
     const student = await this.findOne(id, tenantId);
 
     const newUsedMinutes = student.minutesUsed + minutes;
@@ -335,11 +419,29 @@ export class StudentsService {
       );
     }
 
-    return this.prisma.student.update({
+    const updatedStudent = await this.prisma.student.update({
       where: { id },
       data: {
         minutesUsed: newUsedMinutes,
       },
     });
+
+    // Audit log CRITIQUE pour éviter la fraude
+    await this.auditService.log({
+      tenantId,
+      actorUserId,
+      action: AuditAction.STUDENT_HOURS_UPDATED,
+      entityType: 'Student',
+      entityId: id,
+      metadata: {
+        studentName: `${student.firstName} ${student.birthName}`,
+        type: 'CONSUMPTION',
+        minutesUsed: minutes,
+        previousMinutesUsed: student.minutesUsed,
+        newMinutesUsed: newUsedMinutes,
+      },
+    });
+
+    return updatedStudent;
   }
 }
