@@ -105,7 +105,7 @@ export default function EditStudentPage() {
         const formattedData = {
           ...data,
           birthDate: formattedDate,
-          hoursPurchased: data.minutesPurchased ? data.minutesPurchased / 60 : 0,
+          hoursPurchased: data.minutesPurchased ? Math.round(data.minutesPurchased / 60) : 0,
         };
         
         reset(formattedData);
@@ -142,7 +142,7 @@ export default function EditStudentPage() {
       const cleanedData: Partial<UpdateStudentFormValues> & { minutesPurchased?: number } = {
         ...data,
         phone: formattedPhone,
-        minutesPurchased: data.hoursPurchased ? data.hoursPurchased * 60 : undefined,
+        minutesPurchased: data.hoursPurchased ? Math.round(data.hoursPurchased * 60) : undefined,
         birthZipCode: data.birthZipCode || undefined,
         neph: data.neph || undefined,
         ePhotoCode: data.ePhotoCode || undefined,

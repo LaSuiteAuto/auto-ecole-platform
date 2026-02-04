@@ -200,8 +200,8 @@ export default function StudentDetailPage() {
             </div>
             <p className="text-gray-600 mt-2">restantes</p>
             <div className="mt-4 text-sm text-gray-500">
-              <p>Achetées: {Math.floor(student.minutesPurchased / 60)}h</p>
-              <p>Utilisées: {Math.floor(student.minutesUsed / 60)}h</p>
+              <p>Achetées: {Math.round(student.minutesPurchased / 60)}h</p>
+              <p>Utilisées: {Math.round(student.minutesUsed / 60)}h</p>
             </div>
           </div>
         </div>
